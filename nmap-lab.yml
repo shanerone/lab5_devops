@@ -1,0 +1,43 @@
+---
+- name: Install Nmap and scan authorised targets
+  hosts: scanners
+  become: true
+  gather_facts: false
+
+  vars:
+    nmap_port: 80
+    remote_targets_file: /tmp/nmap-lab-targets.txt
+
+  tasks:
+    - name: Install Nmap on Debian or Ubuntu
+      ansible.builtin.apt:
+        name: nmap
+        state: present
+        # The package index was verified after the VM restart. Skipping a
+        # network refresh keeps the lab independent of a slow mirror.
+        update_cache: false
+
+    - name: Copy the target list to each scanner VM
+      ansible.builtin.copy:
+        src: targets.txt
+        dest: "{{ remote_targets_file }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Scan TCP port 80 and keep greppable output in stdout
+      ansible.builtin.command:
+        argv:
+          - nmap
+          - -iL
+          - "{{ remote_targets_file }}"
+          - -p
+          - "{{ nmap_port | string }}"
+          - -oG
+          - "-"
+      register: nmap_result
+      changed_when: false
+
+    - name: Print the result collected from this VM
+      ansible.builtin.debug:
+        var: nmap_result.stdout_lines

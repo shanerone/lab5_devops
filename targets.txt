@@ -1,0 +1,2 @@
+# The Ubuntu VM scans itself. This is a safe authorised lab target.
+127.0.0.1
